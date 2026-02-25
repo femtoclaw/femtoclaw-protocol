@@ -7,5 +7,5 @@ pub mod message;
 pub mod schema;
 pub mod validation;
 
-pub use message::{Message, ToolCall};
+pub use message::{MessageContent, MessageForm, ProtocolOutput, ToolCallForm, ToolCallWrapper};
 pub use validation::{ValidationError, Validator};
