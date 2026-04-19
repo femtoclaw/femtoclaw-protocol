@@ -1,102 +1,65 @@
-# FemtoClaw Protocol
+# 📜 FemtoClaw Protocol
 
 [![Rust](https://img.shields.io/badge/rust-1.75%2B-blue.svg)](https://www.rust-lang.org)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Status](https://img.shields.io/badge/Status-Normative-green.svg)]()
 
-FemtoClaw Protocol Validation Library — strict JSON schema validation for runtime messages.
+The **FemtoClaw Protocol** is the normative interface between probabilistic inference (Brains) and deterministic execution (Runtime). It enforces strict JSON serialization, eliminating the parsing ambiguities inherent in natural language or markdown-based agent communication.
 
-## Overview
+---
 
-`femtoclaw-protocol` provides the core protocol validation layer for the FemtoClaw Industrial Agent Runtime. It implements strict JSON schema validation according to the [FemtoClaw Protocol Specification (FC-03)](../femtoclaw-spec/03-FemtoClaw_Protocol_Specification.md).
+## 🛡️ Protocol Invariants (FC-03)
 
-This library ensures that all communication between probabilistic inference systems and the deterministic FemtoClaw runtime authority conforms to the protocol requirements, eliminating natural language execution ambiguity.
+To ensure industrial-grade reliability, the protocol enforces the following invariants:
 
-## Features
+1.  **Strict JSON**: All Brain outputs MUST be valid JSON. Markdown wrappers (e.g., \````json\`) are strictly rejected by the validator to prevent injection attacks and parsing failures.
+2.  **Mutual Exclusion**: A protocol message MUST contain exactly one of \`message\` or \`tool_call\`. This ensures that an agent is either communicating with the user or performing a system action, never both simultaneously in a single step.
+3.  **Capability Binding**: Tool calls must bind to a registered and authorized capability identifier. Unknown or unauthorized tools are rejected at the protocol level.
 
-- **Strict JSON Validation**: Validate all protocol messages against defined schemas
-- **Message Parsing**: Parse and validate `Message` and `ToolCall` protocol outputs
-- **Schema Definitions**: JSON schema definitions for protocol compliance
-- **Error Reporting**: Detailed validation error messages for debugging
+---
 
-## Protocol
+## 🧱 Message Forms
 
-The FemtoClaw Protocol defines two mutually exclusive output forms:
-
-1. **Message Form**: `{ "message": { "content": "..." } }`
-2. **Tool Call Form**: `{ "tool_call": { "tool": "...", "args": {...} } }`
-
-Only one form may be present per protocol message.
-
-## Installation
-
-```toml
-[dependencies]
-femtoclaw-protocol = "1.0"
+### 1. Message (Communication)
+Used for final user responses or intermediate internal reasoning steps.
+```json
+{
+  "message": {
+    "content": "The system audit is complete. No vulnerabilities were detected."
+  }
+}
 ```
 
-## Usage
+### 2. Tool Call (Action)
+Used to invoke a specific system capability (Claw).
+```json
+{
+  "tool_call": {
+    "tool": "shell",
+    "args": {
+      "bin": "ls",
+      "argv": ["-la", "/var/log/audit"]
+    }
+  }
+}
+```
+
+---
+
+## 🧪 Validation & Enforcement
+
+The \`Validator\` provided by this crate is the primary security gatekeeper. It ensures that every inference step conforms to the engineering specification before it reaches the policy engine.
 
 ```rust
-use femtoclaw_protocol::{Validator, Message, ToolCall};
+use femtoclaw_protocol::Validator;
 
 let validator = Validator::new();
-
-// Validate incoming protocol message
-let input = r#"{"message":{"content":"Hello, world"}}"#;
-let value = validator.validate(input)?;
-
-println!("Validated: {:?}", value);
+let result = validator.validate_str(raw_brain_output)?;
 ```
 
-## Architecture
+---
 
-```
-┌─────────────────────────────────────────────┐
-│         Inference System (LLM)              │
-└─────────────────┬───────────────────────────┘
-                  │ JSON Protocol Message
-                  ▼
-┌─────────────────────────────────────────────┐
-│         femtoclaw-protocol                  │
-│  ┌─────────────────────────────────────┐   │
-│  │  Schema Validation                  │   │
-│  │  - Message Schema                   │   │
-│  │  - ToolCall Schema                  │   │
-│  └─────────────────────────────────────┘   │
-└─────────────────┬───────────────────────────┘
-                  │ Validated Message
-                  ▼
-┌─────────────────────────────────────────────┐
-│         FemtoClaw Agent Core                │
-└─────────────────────────────────────────────┘
-```
+## 📄 Related Specifications
+- **[FC-03: Protocol Specification](../femtoclaw-spec/03-FemtoClaw_Protocol_Specification.md)**
+- **[FC-05: Capability Authorization](../femtoclaw-spec/05-FemtoClaw_Capability_Authorization_and_Policy_Specification.md)**
 
-## Modules
-
-- `message` — Protocol message types (Message, ToolCall, ProtocolOutput)
-- `schema` — JSON schema definitions for validation
-- `validation` — Validator implementation and error types
-
-## Requirements
-
-- Rust 1.75 or later
-- serde 1.x
-- serde_json 1.x
-- thiserror 1.x
-
-## Related Specifications
-
-- [FC-03: Protocol Specification](../femtoclaw-spec/03-FemtoClaw_Protocol_Specification.md)
-- [FC-05: Capability Authorization](../femtoclaw-spec/05-FemtoClaw_Capability_Authorization_and_Policy_Specification.md)
-- [FC-08: Observability and Telemetry](../femtoclaw-spec/08-FemtoClaw_Observability_and_Telemetry_Specification.md)
-
-## License
-
-Copyright 2026 FemtoClaw
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+Copyright © 2026 FemtoClaw Project.
